@@ -1,3 +1,4 @@
+// GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2016 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -80,6 +81,10 @@ public class BinaryTypeBinding extends ReferenceBinding {
 	protected ReferenceBinding[] superInterfaces;
 	protected FieldBinding[] fields;
 	protected MethodBinding[] methods;
+	// GROOVY start
+	private boolean infraMethodsComplete = false;
+	protected MethodBinding[] infraMethods = Binding.NO_METHODS;
+	// GROOVY end
 	protected ReferenceBinding[] memberTypes;
 	protected TypeVariableBinding[] typeVariables;
 	private BinaryTypeBinding prototype;
@@ -917,6 +922,24 @@ private IBinaryMethod[] createMethods(IBinaryMethod[] iMethods, IBinaryType bina
 			}
 		}
 		this.methods = methods1;
+		// GROOVY start
+		// hold onto the skipped methods, groovy will want to see them
+		if (this.environment.globalOptions.buildGroovyFiles==2) {
+			int skipped = initialTotal-this.methods.length-(iClinit==-1?0:1);
+			if (skipped==0) {
+				this.infraMethods = Binding.NO_METHODS;
+			} else {
+				this.infraMethods = new MethodBinding[skipped];
+				for (int i = 0, index = 0; i < initialTotal; i++) {
+					if (iClinit != i && (toSkip != null && toSkip[i] == -1)) {
+						// this is a skipped method
+						MethodBinding method = createMethod(iMethods[i], binaryType, sourceLevel, missingTypeNames);
+						this.infraMethods[index++]= method;
+					}
+				}
+			}
+		}
+		// GROOVY end
 		return mappedBinaryMethods;
 	}
 }
@@ -1432,6 +1455,17 @@ public ReferenceBinding[] memberTypes() {
 	this.tagBits &= ~TagBits.HasUnresolvedMemberTypes;
 	return this.memberTypes;
 }
+//GROOVY start
+public MethodBinding[] infraMethods() {
+	if (!this.infraMethodsComplete) {
+		for (int i = this.infraMethods.length; --i >= 0;) {
+			resolveTypesFor(this.infraMethods[i]);
+		}
+		this.infraMethodsComplete=true;
+	}
+	return this.infraMethods;
+}
+//GROOVY end
 // NOTE: the return type, arg & exception types of each method of a binary type are resolved when needed
 public MethodBinding[] methods() {
 	
