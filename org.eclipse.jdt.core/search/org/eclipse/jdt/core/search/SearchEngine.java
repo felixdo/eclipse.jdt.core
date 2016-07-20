@@ -1,3 +1,4 @@
+// GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2016 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -11,6 +12,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.core.search;
 
+import org.codehaus.jdt.groovy.integration.LanguageSupportFactory;
 import org.eclipse.core.resources.*;
 import org.eclipse.core.runtime.*;
 
@@ -597,6 +599,13 @@ public class SearchEngine {
 	 *@since 3.0
 	 */
 	public void search(SearchPattern pattern, SearchParticipant[] participants, IJavaSearchScope scope, SearchRequestor requestor, IProgressMonitor monitor) throws CoreException {
+	    // GROOVY start
+	    // GRECLIPSE-1054
+		// potentially expand search scope because private declarations can be referenced outside the class that declares them.
+		if (pattern.focus != null && LanguageSupportFactory.isInterestingProject(pattern.focus.getJavaProject().getProject())) {
+			scope = LanguageSupportFactory.expandSearchScope(scope, pattern, requestor);
+		}
+		// GROOVY end
 		this.basicEngine.search(pattern, participants, scope, requestor, monitor);
 	}
 

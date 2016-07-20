@@ -1,3 +1,4 @@
+//GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2016 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -24,6 +25,8 @@ package org.eclipse.jdt.internal.core.hierarchy;
  * implements I & J?
  */
 
+
+import org.codehaus.jdt.groovy.integration.LanguageSupportFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -671,7 +674,12 @@ public void resolve(Openable[] openables, HashSet localTypes, IProgressMonitor m
 
 		subMonitor.split(1);
 		// build type bindings
+		// GROOVY start: ensure downstream groovy parses share the same compilationunit
+		/* old {
 		Parser parser = new Parser(this.lookupEnvironment.problemReporter, true);
+		} new */
+		Parser parser = LanguageSupportFactory.getParser(this, this.lookupEnvironment.globalOptions, this.lookupEnvironment.problemReporter, true, 1);
+		// GROOVY end
 		final boolean isJava8 = this.options.sourceLevel >= ClassFileConstants.JDK1_8;
 		for (int i = 0; i < openablesLength; i++) {
 			Openable openable = openables[i];
