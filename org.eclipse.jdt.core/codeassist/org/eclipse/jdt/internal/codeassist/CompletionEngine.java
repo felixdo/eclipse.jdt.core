@@ -14,11 +14,12 @@
  *     Gábor Kövesdán - Contribution for Bug 350000 - [content assist] Include non-prefix matches in auto-complete suggestions
  *******************************************************************************/
 package org.eclipse.jdt.internal.codeassist;
-
+// GROOVY PATCHED
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Map;
 
+import org.codehaus.jdt.groovy.integration.LanguageSupportFactory;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.CompletionContext;
@@ -683,8 +684,12 @@ public final class CompletionEngine
 				this.problemFactory);
 		this.lookupEnvironment =
 			new LookupEnvironment(this, this.compilerOptions, this.problemReporter, nameEnvironment);
-		this.parser =
-			new CompletionParser(this.problemReporter, this.requestor.isExtendedContextRequired(), monitor);
+		// GROOVY start
+//		this.parser =
+//			new CompletionParser(this.problemReporter, this.requestor.isExtendedContextRequired(), monitor);
+		this.parser = LanguageSupportFactory.getCompletionParser(this.lookupEnvironment.globalOptions,
+				this.problemReporter, this.requestor.isExtendedContextRequired(), monitor);
+		// GROOVY end
 		this.owner = owner;
 		this.monitor = monitor;
 	}
