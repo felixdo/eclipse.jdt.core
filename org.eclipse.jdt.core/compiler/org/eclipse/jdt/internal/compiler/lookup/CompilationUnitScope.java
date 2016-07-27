@@ -1,3 +1,4 @@
+// GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2014 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -86,6 +87,18 @@ void buildFieldsAndMethods() {
 	for (int i = 0, length = this.topLevelTypes.length; i < length; i++)
 		this.topLevelTypes[i].scope.buildFieldsAndMethods();
 }
+//GROOVY start: new method, can be overridden
+/**
+* @param referenceContext
+* @return true if error gets reported
+*/
+protected boolean reportPackageIsNotExpectedPackage(CompilationUnitDeclaration referenceContext) {
+	problemReporter().packageIsNotExpectedPackage(referenceContext);
+	return true;
+}
+//GROOVY end
+
+protected // GROOVY patched: to protected
 void buildTypeBindings(AccessRestriction accessRestriction) {
 	this.topLevelTypes = new SourceTypeBinding[0]; // want it initialized if the package cannot be resolved
 	boolean firstIsSynthetic = false;
@@ -93,14 +106,27 @@ void buildTypeBindings(AccessRestriction accessRestriction) {
 		char[][] expectedPackageName = this.referenceContext.compilationResult.compilationUnit.getPackageName();
 		if (expectedPackageName != null
 				&& !CharOperation.equals(this.currentPackageName, expectedPackageName)) {
-
+			// GROOVY start
+			boolean errorReported = true;
+			// GROOVY end
 			// only report if the unit isn't structurally empty
 			if (this.referenceContext.currentPackage != null
 					|| this.referenceContext.types != null
 					|| this.referenceContext.imports != null) {
+				// GROOVY start:
+				/* old {
 				problemReporter().packageIsNotExpectedPackage(this.referenceContext);
+				} new */
+				errorReported = reportPackageIsNotExpectedPackage(this.referenceContext);
+				// GROOVY end
 			}
+			// GROOVY start
+			if (errorReported) {
+			// GROOVY end
 			this.currentPackageName = expectedPackageName.length == 0 ? CharOperation.NO_CHAR_CHAR : expectedPackageName;
+			// GROOVY start
+			}
+			// GROOVY end
 		}
 	}
 	if (this.currentPackageName == CharOperation.NO_CHAR_CHAR) {
@@ -156,6 +182,8 @@ void buildTypeBindings(AccessRestriction accessRestriction) {
 			problemReporter().typeCollidesWithPackage(this.referenceContext, typeDecl);
 		}
 
+		//GROOVY start: make this decision only for java types, so extract it to a new method so it can be overridden
+		/* old {
 		if ((typeDecl.modifiers & ClassFileConstants.AccPublic) != 0) {
 			char[] mainTypeName;
 			if ((mainTypeName = this.referenceContext.getMainTypeName()) != null // mainTypeName == null means that implementor of ICompilationUnit decided to return null
@@ -164,8 +192,16 @@ void buildTypeBindings(AccessRestriction accessRestriction) {
 				// tolerate faulty main type name (91091), allow to proceed into type construction
 			}
 		}
+		} new */
+		checkPublicTypeNameMatchesFilename(typeDecl);
+		// GROOVY end
 
+		// GROOVY start: make the ClassScope creation overridable
+		/* old {
 		ClassScope child = new ClassScope(this, typeDecl);
+		} new */
+		ClassScope child = buildClassScope(this, typeDecl);
+		// GROOVY end
 		SourceTypeBinding type = child.buildType(null, this.fPackage, accessRestriction);
 		if (firstIsSynthetic && i == 0)
 			type.modifiers |= ClassFileConstants.AccSynthetic;
@@ -177,6 +213,21 @@ void buildTypeBindings(AccessRestriction accessRestriction) {
 	if (count != this.topLevelTypes.length)
 		System.arraycopy(this.topLevelTypes, 0, this.topLevelTypes = new SourceTypeBinding[count], 0, count);
 }
+//GROOVY start: new methods, overridden in our compilation unit scope
+protected void checkPublicTypeNameMatchesFilename(TypeDeclaration typeDecl) {
+	if ((typeDecl.modifiers & ClassFileConstants.AccPublic) != 0) {
+		char[] mainTypeName;
+		if ((mainTypeName = this.referenceContext.getMainTypeName()) != null // mainTypeName == null means that implementor of ICompilationUnit decided to return null
+				&& !CharOperation.equals(mainTypeName, typeDecl.name)) {
+			problemReporter().publicClassMustMatchFileName(this.referenceContext, typeDecl);
+			// tolerate faulty main type name (91091), allow to proceed into type construction
+		}
+	}
+}
+protected ClassScope buildClassScope(Scope parent, TypeDeclaration typeDecl) {
+	return new ClassScope(parent, typeDecl);
+}
+//GROOVY end
 void checkAndSetImports() {
 	if (this.referenceContext.imports == null) {
 		this.imports = getDefaultImports();
@@ -193,9 +244,28 @@ void checkAndSetImports() {
 			break;
 		}
 	}
+
+	// GROOVY start
+	/* old {
 	ImportBinding[] resolvedImports = new ImportBinding[numberOfImports];
 	resolvedImports[0] = getDefaultImports()[0];
 	int index = 1;
+	} new */
+	ImportBinding[] resolvedImports = null;
+	int index = -1;
+	ImportBinding[] defaultImportBindings = getDefaultImports();
+	if (defaultImportBindings.length==1) {
+		resolvedImports = new ImportBinding[numberOfImports];
+		resolvedImports[0] = getDefaultImports()[0];
+		index = 1;
+	} else {
+		resolvedImports = new ImportBinding[numberOfImports+defaultImportBindings.length-1];
+		index = 0;
+		for (int i=0;i<defaultImportBindings.length;i++) {
+			resolvedImports[index++] = defaultImportBindings[i];
+		}
+	}
+	// GROOVY end
 
 	nextImport : for (int i = 0; i < numberOfStatements; i++) {
 		ImportReference importReference = this.referenceContext.imports[i];
@@ -232,6 +302,7 @@ void checkAndSetImports() {
 /**
  * Perform deferred check specific to parameterized types: bound checks, supertype collisions
  */
+protected // GROOVY patched: made protected
 void checkParameterizedTypes() {
 	if (compilerOptions().sourceLevel < ClassFileConstants.JDK1_5) return;
 
@@ -323,6 +394,7 @@ void connectTypeHierarchy() {
 	for (int i = 0, length = this.topLevelTypes.length; i < length; i++)
 		this.topLevelTypes[i].scope.connectTypeHierarchy();
 }
+protected // GROOVY patched: made protected
 void faultInImports() {
 	boolean unresolvedFound = false;
 	// should report unresolved only if we are not suppressing caching of failed resolutions
@@ -356,9 +428,28 @@ void faultInImports() {
 			break;
 		}
 	}
+	// FIXASC revisit this code and the other piece that does the same job - there must be a neater way
+	// GROOVY start
+	/* old {
 	this.tempImports = new ImportBinding[numberOfImports];
 	this.tempImports[0] = getDefaultImports()[0];
 	this.importPtr = 1;
+	} new */
+	this.tempImports = null;
+	this.importPtr = -1;
+	ImportBinding[] defaultImportBindings = getDefaultImports();
+	if (defaultImportBindings.length==1) {
+		this.tempImports = new ImportBinding[numberOfImports];
+		this.tempImports[0] = getDefaultImports()[0];
+		this.importPtr = 1;
+	} else {
+		this.tempImports  = new ImportBinding[numberOfImports+defaultImportBindings.length-1];
+		this.importPtr  = 0;
+		for (int i=0;i<defaultImportBindings.length;i++) {
+			this.tempImports[this.importPtr++] = defaultImportBindings[i];
+		}
+	}
+	// GROOVY end
 	
 	// keep static imports with normal imports until there is a reason to split them up
 	// on demand imports continue to be packages & types. need to check on demand type imports for fields/methods
@@ -385,7 +476,12 @@ void faultInImports() {
 
 			Binding importBinding = findImport(compoundName, compoundName.length);
 			if (!importBinding.isValidBinding()) {
+				// GROOVY start:
+                /* old {
 				problemReporter().importProblem(importReference, importBinding);
+				} new */
+				reportImportProblem(importReference,importBinding);
+				// GROOVY end
 				continue nextImport;
 			}
 			if (importReference.isStatic() && importBinding instanceof PackageBinding) {
@@ -401,7 +497,12 @@ void faultInImports() {
 				} else {
 					unresolvedFound = true;
 					if (reportUnresolved) {
-						problemReporter().importProblem(importReference, importBinding);
+					// GROOVY start: delegate to overridable helper
+					/* old {
+					problemReporter().importProblem(importReference, importBinding);
+					} new */
+					recordImportProblem(importReference, importBinding);
+					// GROOVY end
 					}
 					continue nextImport;
 				}
@@ -437,7 +538,12 @@ void faultInImports() {
 	for (int i = 0; i < length; i++) {
 		ImportBinding binding = this.imports[i];
 		if (!binding.onDemand && binding.resolvedImport instanceof ReferenceBinding || binding instanceof ImportConflictBinding)
+			// GROOVY start
+			/* old {
 			this.typeOrPackageCache.put(binding.compoundName[binding.compoundName.length - 1], binding);
+			} new */
+			this.typeOrPackageCache.put(getSimpleName(binding), binding);
+			// GROOVY end
 	}
 	this.skipCachingImports = this.suppressImportErrors && unresolvedFound;
 }
@@ -447,6 +553,11 @@ public void faultInTypes() {
 	for (int i = 0, length = this.topLevelTypes.length; i < length; i++)
 		this.topLevelTypes[i].faultInTypesForFieldsAndMethods();
 }
+//GROOVY start
+protected void recordImportProblem(ImportReference importReference, Binding importBinding) {
+	problemReporter().importProblem(importReference, importBinding);
+}
+//GROOVY end
 // this API is for code assist purpose
 public Binding findImport(char[][] compoundName, boolean findStaticImports, boolean onDemand) {
 	if(onDemand) {
@@ -499,11 +610,22 @@ private Binding findImport(char[][] compoundName, int length) {
 		if (type == null)
 			return new ProblemReferenceBinding(CharOperation.subarray(compoundName, 0, i), null, ProblemReasons.NotFound);
 	}
-	if (!type.canBeSeenBy(this.fPackage))
+	// GROOVY start:
+	/* old {
+    if (!type.canBeSeenBy(this.fPackage))
+	} new */
+	if (!canBeSeenBy(type,this.fPackage))
+	// GROOVY end
 		return new ProblemReferenceBinding(compoundName, type, ProblemReasons.NotVisible);
 	return type;
 }
-private Binding findSingleImport(char[][] compoundName, int mask, boolean findStaticImports) {
+//GROOVY start: new method for determining visibility - rules are relaxed for groovy
+protected boolean canBeSeenBy(ReferenceBinding type, PackageBinding pkg) {
+	return type.canBeSeenBy(pkg);
+}
+//GROOVY end
+protected // GROOVY patched: private to protected
+Binding findSingleImport(char[][] compoundName, int mask, boolean findStaticImports) {
 	if (compoundName.length == 1) {
 		// findType records the reference
 		// the name cannot be a package
@@ -575,6 +697,7 @@ private MethodBinding findStaticMethod(ReferenceBinding currentType, char[] sele
 	} while ((currentType = currentType.superclass()) != null);
 	return null;
 }
+protected // GROOVY patched: made protected
 ImportBinding[] getDefaultImports() {
 	// initialize the default imports if necessary... share the default java.lang.* import
 	if (this.environment.defaultImports != null) return this.environment.defaultImports;
@@ -654,6 +777,7 @@ OR 'a' -> 'a' in the simple name collection
 -> As long as each single char[] is interned, we should not have a space problem
  and can handle collision cases.
 */
+public // GROOVY patched: made public
 void recordQualifiedReference(char[][] qualifiedName) {
 	if (this.qualifiedReferences == null) return; // not recording dependencies
 
@@ -693,6 +817,8 @@ void recordRootReference(char[] simpleName) {
 	if (!this.rootReferences.contains(simpleName))
 		this.rootReferences.add(simpleName);
 }
+
+public // GROOVY patched: made public
 void recordSimpleReference(char[] simpleName) {
 	if (this.simpleNameReferences == null) return; // not recording dependencies
 
@@ -893,7 +1019,14 @@ private int checkAndRecordImportBinding(
 		if (importReference.isTypeUseDeprecated(typeToCheck, this))
 			problemReporter().deprecatedType(typeToCheck, importReference);
 
+
+
+		// GROOVY start: use any aliased name for lookup
+		/* old {
 		ReferenceBinding existingType = typesBySimpleNames.get(name);
+		} new */
+		ReferenceBinding existingType = typesBySimpleNames.get(importReference.getSimpleName());
+		// GROOVY end
 		if (existingType != null) {
 			// duplicate test above should have caught this case, but make sure
 			if (TypeBinding.equalsEquals(existingType, referenceBinding)) {
@@ -942,7 +1075,13 @@ private int checkAndRecordImportBinding(
 			problemReporter().duplicateImport(importReference);
 			return -1;
 		}
+
+		// GROOVY start: delegate to a method to ask for the shortname to use
+		/* old {
 		typesBySimpleNames.put(name, referenceBinding);
+		} new */
+		typesBySimpleNames.put(importReference.getSimpleName(),referenceBinding);
+		// GROOVY end
 	} else if (importBinding instanceof FieldBinding) {
 		for (int j = 0; j < this.importPtr; j++) {
 			ImportBinding resolved = this.tempImports[j];
@@ -969,6 +1108,31 @@ private int checkAndRecordImportBinding(
 	}
 	return this.importPtr;
 }
+
+//GROOVY start: new methods
+public void augmentTypeHierarchy() {
+	// nothing to do for standard Java
+}
+public boolean checkTargetCompatibility() {
+	return true;
+}
+public boolean scannerAvailable() {
+	return true;
+}
+public boolean reportInvalidType(TypeReference typeReference, TypeBinding resolvedType) {
+	return true;
+}
+protected void reportImportProblem(ImportReference importReference, Binding importBinding) {
+	problemReporter().importProblem(importReference, importBinding);
+}
+public boolean canSeeEverything() {
+	return false;
+}
+public ReferenceBinding selectBinding(ReferenceBinding temp, ReferenceBinding type, boolean isDeclaredImport) {
+	return null;
+}
+//GROOVY end
+
 @Override
 public boolean hasDefaultNullnessFor(int location) {
 	if (this.fPackage != null)

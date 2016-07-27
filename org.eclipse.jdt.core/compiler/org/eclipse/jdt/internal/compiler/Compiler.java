@@ -1,3 +1,4 @@
+// GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2015 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -13,6 +14,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.internal.compiler;
 
+import org.codehaus.jdt.groovy.integration.LanguageSupportFactory;
 import org.eclipse.jdt.core.compiler.*;
 import org.eclipse.jdt.internal.compiler.env.*;
 import org.eclipse.jdt.internal.compiler.impl.*;
@@ -268,6 +270,16 @@ public class Compiler implements ITypeRequestor, ProblemSeverities {
 		this.options = options;
 		this.progress = progress;
 
+		// GROOVY start - temporary
+		if (this.options.buildGroovyFiles==0) {
+			// demoted to error message, groovy disabled
+			// disable this println for now - seems to have served its purpose:
+//			System.err.println("Build groovy files option has not been set one way or the other: use 'options.put(CompilerOptions.OPTIONG_BuildGroovyFiles, CompilerOptions.ENABLED);'");//$NON-NLS-1$
+			this.options.buildGroovyFiles=1;
+			this.options.groovyFlags = 0;
+		}
+		// GROOVY end
+
 		// wrap requestor in DebugRequestor if one is specified
 		if(DebugRequestor == null) {
 			this.requestor = requestor;
@@ -420,6 +432,49 @@ public class Compiler implements ITypeRequestor, ProblemSeverities {
 	 */
 	public void compile(ICompilationUnit[] sourceUnits) {
 		this.stats.startTime = System.currentTimeMillis();
+		// GROOVY start
+		// sort the sourceUnits - java first! might be temporary, hmmm
+		if (this.options.buildGroovyFiles==2) {
+			int groovyFileIndex = -1;
+//			System.out.println("before");
+//			for (int u=0,max=sourceUnits.length;u<max;u++) {
+//				System.out.println(sourceUnits[u].getFileName());
+//			}
+			for (int u=0,max=sourceUnits.length;u<max;u++) {
+				char[] fn = sourceUnits[u].getFileName();
+				boolean isDotJava = fn[fn.length-1]=='a'; // a means .java
+				if (isDotJava) {
+					if (groovyFileIndex!=-1) {
+						// swap them!
+						ICompilationUnit swap = sourceUnits[groovyFileIndex];
+						sourceUnits[groovyFileIndex] = sourceUnits[u];
+						sourceUnits[u] = swap;
+						// find the next .groovy file after the groovyFileIndex (worst case it will be 'u')
+						int newGroovyFileIndex = -1;
+						for (int g=groovyFileIndex;g<=u;g++) {
+							char[] fn2 = sourceUnits[g].getFileName();
+							boolean isDotGroovy = fn2[fn2.length-1]=='y';
+							if (isDotGroovy) {
+								newGroovyFileIndex = g;
+								break;
+							}
+						}
+						groovyFileIndex = newGroovyFileIndex;
+					}
+				} else {
+					if (groovyFileIndex==-1) {
+						groovyFileIndex = u;
+					}
+				}
+			}
+//			System.out.println("after");
+//			for (int u=0,max=sourceUnits.length;u<max;u++) {
+//				System.out.println(sourceUnits[u].getFileName());
+//			}
+		}
+		// GROOVY end
+		CompilationUnitDeclaration unit = null;
+		ProcessTaskManager processingTask = null;
 		try {
 			// build and record parsed units
 			reportProgress(Messages.compilation_beginningToCompile);
@@ -774,8 +829,12 @@ public class Compiler implements ITypeRequestor, ProblemSeverities {
 	}
 
 	public void initializeParser() {
-
+		// GROOVY start
+		/* old {
 		this.parser = new Parser(this.problemReporter, this.options.parseLiteralExpressionsAsConstants);
+		} new */
+		this.parser = LanguageSupportFactory.getParser(this, this.lookupEnvironment==null?null:this.lookupEnvironment.globalOptions,this.problemReporter, this.options.parseLiteralExpressionsAsConstants, 1);
+		// GROOVY end
 	}
 
 	/**
@@ -969,6 +1028,9 @@ public class Compiler implements ITypeRequestor, ProblemSeverities {
 
 	public void reset() {
 		this.lookupEnvironment.reset();
+		// GROOVY start: give the parser a chance to reset as well
+		this.parser.reset();
+		// GROOVY end
 		this.parser.scanner.source = null;
 		this.unitsToProcess = null;
 		if (DebugRequestor != null) DebugRequestor.reset();

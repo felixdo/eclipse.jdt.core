@@ -1,3 +1,4 @@
+//GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2015 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -13,6 +14,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.internal.core;
 
+import org.codehaus.jdt.groovy.integration.LanguageSupportFactory;
 import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
@@ -488,6 +490,9 @@ public class JavaProject
 				}
 			}
 		}
+		// GROOVY start
+		LanguageSupportFactory.getEventHandler().handle(this,"close");
+		// GROOVY end
 		super.close();
 	}
 

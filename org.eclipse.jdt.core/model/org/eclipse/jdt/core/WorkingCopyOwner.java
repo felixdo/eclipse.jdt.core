@@ -1,3 +1,4 @@
+// GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2009 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -10,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.core;
 
+import org.codehaus.jdt.groovy.integration.LanguageSupportFactory;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.compiler.CharOperation;
 import org.eclipse.jdt.internal.core.BufferManager;
@@ -211,7 +213,12 @@ public abstract class WorkingCopyOwner {
 	public final ICompilationUnit newWorkingCopy(String name, IClasspathEntry[] classpath, IProblemRequestor problemRequestor, IProgressMonitor monitor) throws JavaModelException {
 		ExternalJavaProject project = new ExternalJavaProject(classpath);
 		IPackageFragment parent = ((PackageFragmentRoot) project.getPackageFragmentRoot(project.getProject())).getPackageFragment(CharOperation.NO_STRINGS);
+		// GROOVY start
+        /* old {
 		CompilationUnit result = new CompilationUnit((PackageFragment) parent, name, this);
+        } new */
+		CompilationUnit result = LanguageSupportFactory.newCompilationUnit((PackageFragment) parent, name, this);
+        // GROOVY end
 		result.becomeWorkingCopy(problemRequestor, monitor);
 		return result;
 	}
@@ -258,7 +265,12 @@ public abstract class WorkingCopyOwner {
 	public final ICompilationUnit newWorkingCopy(String name, IClasspathEntry[] classpath, IProgressMonitor monitor) throws JavaModelException {
 		ExternalJavaProject project = new ExternalJavaProject(classpath);
 		IPackageFragment parent = ((PackageFragmentRoot) project.getPackageFragmentRoot(project.getProject())).getPackageFragment(CharOperation.NO_STRINGS);
+        // GROOVY start
+        /* old {
 		CompilationUnit result = new CompilationUnit((PackageFragment) parent, name, this);
+        } new */
+		CompilationUnit result = LanguageSupportFactory.newCompilationUnit((PackageFragment) parent, name, this);
+        // GROOVY end
 		result.becomeWorkingCopy(getProblemRequestor(result), monitor);
 		return result;
 	}
