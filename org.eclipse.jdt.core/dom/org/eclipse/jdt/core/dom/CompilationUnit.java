@@ -1,3 +1,4 @@
+// GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2013 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -196,6 +197,10 @@ public class CompilationUnit extends ASTNode {
 	 *
 	 * @param ast the AST that is to own this node
 	 */
+	/**
+	 * @since 3.11
+	 */
+	protected // GROOVY patched: made protected
 	CompilationUnit(AST ast) {
 		super(ast);
 	}
@@ -203,6 +208,10 @@ public class CompilationUnit extends ASTNode {
 	/* (omit javadoc for this method)
 	 * Method declared on ASTNode.
 	 */
+	/**
+	 * @since 3.11
+	 */
+	protected // GROOVY patched: made protected
 	void accept0(ASTVisitor visitor) {
 		boolean visitChildren = visitor.visit(this);
 		if (visitChildren) {

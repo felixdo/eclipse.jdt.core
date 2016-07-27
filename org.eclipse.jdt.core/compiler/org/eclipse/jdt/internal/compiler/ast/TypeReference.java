@@ -1,3 +1,4 @@
+// GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2015 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -47,6 +48,7 @@ import org.eclipse.jdt.internal.compiler.lookup.ArrayBinding;
 import org.eclipse.jdt.internal.compiler.lookup.Binding;
 import org.eclipse.jdt.internal.compiler.lookup.BlockScope;
 import org.eclipse.jdt.internal.compiler.lookup.ClassScope;
+import org.eclipse.jdt.internal.compiler.lookup.CompilationUnitScope;
 import org.eclipse.jdt.internal.compiler.lookup.LocalVariableBinding;
 import org.eclipse.jdt.internal.compiler.lookup.LookupEnvironment;
 import org.eclipse.jdt.internal.compiler.lookup.ProblemReasons;
@@ -556,6 +558,14 @@ protected void reportDeprecatedType(TypeBinding type, Scope scope) {
 }
 
 protected void reportInvalidType(Scope scope) {
+	// GROOVY start: don't report this, let groovy do it
+	if (scope!=null) {
+		CompilationUnitScope cuScope = scope.compilationUnitScope();
+		if (!cuScope.reportInvalidType(this, this.resolvedType)) {
+			return;
+		}
+	}
+	// GROOVY end
 	scope.problemReporter().invalidType(this, this.resolvedType);
 }
 

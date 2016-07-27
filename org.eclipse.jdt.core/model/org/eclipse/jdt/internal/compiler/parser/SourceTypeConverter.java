@@ -1,3 +1,4 @@
+// GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2014 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -26,6 +27,7 @@ package org.eclipse.jdt.internal.compiler.parser;
  *
  */
 
+import org.codehaus.jdt.groovy.integration.LanguageSupportFactory;
 import org.eclipse.jdt.core.IAnnotatable;
 import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.IImportDeclaration;
@@ -107,13 +109,34 @@ public class SourceTypeConverter extends TypeConverter {
 	 * at least contain one type.
 	 */
 	private CompilationUnitDeclaration convert(ISourceType[] sourceTypes, CompilationResult compilationResult) throws JavaModelException {
+		// GROOVY start
+        /* old {
 		this.unit = new CompilationUnitDeclaration(this.problemReporter, compilationResult, 0);
+        } new */
+		this.unit = LanguageSupportFactory.newCompilationUnitDeclaration((ICompilationUnit) ((SourceTypeElementInfo) sourceTypes[0]).getHandle().getCompilationUnit(), this.problemReporter, compilationResult, 0);
+        // GROOVY end
 		// not filled at this point
 
 		if (sourceTypes.length == 0) return this.unit;
 		SourceTypeElementInfo topLevelTypeInfo = (SourceTypeElementInfo) sourceTypes[0];
 		org.eclipse.jdt.core.ICompilationUnit cuHandle = topLevelTypeInfo.getHandle().getCompilationUnit();
 		this.cu = (ICompilationUnit) cuHandle;
+
+		// GROOVY start
+		// trying to avoid building an incorrect TypeDeclaration below (when it should be a GroovyTypeDeclaration).
+		// similar to code below that creates the Parser and calls dietParse
+		// FIXASC think about doing the necessary rewrite below rather than this - does it make things too slow?
+
+//		final boolean isInterestingProject = LanguageSupportFactory.isInterestingProject(compilationResult.getCompilationUnit().getjavaBuilder.getProject());
+		// GROOVY should be 'true' here?
+		if (LanguageSupportFactory.isInterestingSourceFile(new String(compilationResult.getFileName()))) {
+			try {
+				return LanguageSupportFactory.getParser(this, this.problemReporter.options, this.problemReporter, true, 3).dietParse(this.cu, compilationResult);
+			} catch (Throwable t) {
+				t.printStackTrace();
+			}
+		}
+		// GROOVY end
 
 		final CompilationUnitElementInfo compilationUnitElementInfo = (CompilationUnitElementInfo) ((JavaElement) this.cu).getElementInfo();
 		if (this.has1_5Compliance && 
