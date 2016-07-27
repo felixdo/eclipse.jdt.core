@@ -1,3 +1,4 @@
+// GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2016 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -342,6 +343,11 @@ public boolean canBeSeenBy(ReferenceBinding receiverType, ReferenceBinding invoc
  * Answer true if the receiver is visible to the type provided by the scope.
  */
 public boolean canBeSeenBy(Scope scope) {
+	// GROOVY start
+	if (scope.compilationUnitScope()!=null && scope.compilationUnitScope().canSeeEverything()) {
+		return true;
+	}
+	// GROOVY end
 	if (isPublic()) return true;
 
 	SourceTypeBinding invocationType = scope.enclosingSourceType();
@@ -2137,4 +2143,10 @@ public static boolean isConsistentIntersection(TypeBinding[] intersectingTypes) 
 	}
 	return true;
 }
+//GROOVY start
+//more thought required - is this in the right place?
+public MethodBinding[] getAnyExtraMethods(char[] selector) {
+       return null;
+}
+//GROOVY end
 }

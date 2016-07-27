@@ -1,3 +1,4 @@
+// GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2016 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -207,7 +208,12 @@ ReferenceBinding askForType(PackageBinding packageBinding, char[] name) {
 * NOTE: This method can be called multiple times as additional source files are needed
 */
 public void buildTypeBindings(CompilationUnitDeclaration unit, AccessRestriction accessRestriction) {
+	// GROOVY start
+	/* old {
 	CompilationUnitScope scope = new CompilationUnitScope(unit, this);
+	} new */
+	CompilationUnitScope scope = unit.buildCompilationUnitScope(this);
+	// GROOVY end
 	scope.buildTypeBindings(accessRestriction);
 	int unitsLength = this.units.length;
 	if (++this.lastUnitIndex >= unitsLength)
@@ -247,6 +253,10 @@ public void completeTypeBindings() {
 
 	for (int i = this.lastCompletedUnitIndex + 1; i <= this.lastUnitIndex; i++) {
 	    (this.unitBeingCompleted = this.units[i]).scope.connectTypeHierarchy();
+		// GROOVY start: extra step, augment type hierarchy, may bring in GroovyObject as source (if in groovycore) and that
+	    // will then need its type hierarchy connecting
+	    (this.unitBeingCompleted = this.units[i]).scope.augmentTypeHierarchy();
+		// GROOVY end
 	}
 	this.stepCompleted = CONNECT_TYPE_HIERARCHY;
 

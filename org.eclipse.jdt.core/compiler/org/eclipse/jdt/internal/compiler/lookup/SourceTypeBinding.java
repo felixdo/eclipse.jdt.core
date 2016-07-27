@@ -1,3 +1,4 @@
+// GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2016 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -102,7 +103,7 @@ public class SourceTypeBinding extends ReferenceBinding {
 	private int nullnessDefaultInitialized = 0; // 0: nothing; 1: type; 2: package
 	private int lambdaOrdinal = 0;
 	private ReferenceBinding containerAnnotationType = null;
-
+	
 	public ExternalAnnotationProvider externalAnnotationProvider;
 	
 public SourceTypeBinding(char[][] compoundName, PackageBinding fPackage, ClassScope scope) {
@@ -1197,6 +1198,13 @@ public FieldBinding getField(char[] fieldName, boolean needResolve) {
 	return null;
 }
 
+//GROOVY start
+//FIXASC (M3) is this the right approach to adding extra methods? Probably not - they should be forced on when created
+public MethodBinding[] getAnyExtraMethods(char[] selector) {
+	return (this.scope==null?null:this.scope.getAnyExtraMethods(selector));
+}
+//GROOVY end
+
 // NOTE: the return type, arg & exception types of each method of a source type are resolved when needed
 public MethodBinding[] getMethods(char[] selector) {
 	if (!isPrototype())
@@ -1807,7 +1815,30 @@ public MethodBinding resolveTypesFor(MethodBinding method) {
 		method.modifiers |= ExtraCompilerModifiers.AccRestrictedAccess;
 
 	AbstractMethodDeclaration methodDecl = method.sourceMethod();
+	// GROOVY
+	/* old {
 	if (methodDecl == null) return null; // method could not be resolved in previous iteration
+    } new*/
+	if (methodDecl == null) {
+		if (method instanceof LazilyResolvedMethodBinding) {
+			LazilyResolvedMethodBinding lrMethod = (LazilyResolvedMethodBinding)method;
+			// the rest is a copy of the code below but doesn't depend on the method declaration
+			// nothing to do for method type parameters (there are none)
+			// nothing to do for method exceptions (there are none)
+			TypeBinding ptb = lrMethod.getParameterTypeBinding();
+			if (ptb==null) {
+				method.parameters = Binding.NO_PARAMETERS;
+			} else {
+				method.parameters = new TypeBinding[]{ptb};
+			}
+			method.returnType = lrMethod.getReturnTypeBinding();
+			method.modifiers &= ~ExtraCompilerModifiers.AccUnresolved;
+			return method;
+		}
+		// returning null is what this clause would have done anyway
+		return null;
+	}
+	// FIXASC - end
 
 
 	TypeParameter[] typeParameters = methodDecl.typeParameters();
@@ -1987,14 +2018,14 @@ public MethodBinding resolveTypesFor(MethodBinding method) {
 				if (this.scope.environment().usesNullTypeAnnotations()) {
 					if (!this.scope.validateNullAnnotation(nullTagBits, returnTypeRef, methodDecl.annotations))
 						method.returnType.tagBits &= ~TagBits.AnnotationNullMASK;
-					method.tagBits &= ~TagBits.AnnotationNullMASK;
+						method.tagBits &= ~TagBits.AnnotationNullMASK;
 				} else {
 					if (!this.scope.validateNullAnnotation(nullTagBits, returnTypeRef, methodDecl.annotations))
 						method.tagBits &= ~TagBits.AnnotationNullMASK;
+					}
 				}
 			}
 		}
-	}
 	if (compilerOptions.storeAnnotations)
 		createArgumentBindings(method, compilerOptions); // need annotations resolved already at this point
 	if (foundReturnTypeProblem)
@@ -2570,11 +2601,11 @@ public TypeBinding unannotated() {
 
 @Override
 public TypeBinding withoutToplevelNullAnnotation() {
-	if (!hasNullTypeAnnotations())
-		return this;
-	AnnotationBinding[] newAnnotations = this.environment.filterNullTypeAnnotations(this.typeAnnotations);
-	if (newAnnotations.length > 0)
-		return this.environment.createAnnotatedType(this.prototype, newAnnotations);
+		if (!hasNullTypeAnnotations())
+			return this;
+		AnnotationBinding[] newAnnotations = this.environment.filterNullTypeAnnotations(this.typeAnnotations);
+		if (newAnnotations.length > 0)
+			return this.environment.createAnnotatedType(this.prototype, newAnnotations);
 	return this.prototype;
 }
 

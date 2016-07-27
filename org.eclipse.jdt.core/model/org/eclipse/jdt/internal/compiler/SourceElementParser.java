@@ -1,3 +1,4 @@
+// GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2015 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -996,7 +997,8 @@ private void rememberCategories() {
 		}
 	}
 }
-private void reset() {
+public // GROOVY patched: private to public
+void reset() {
 	this.sourceEnds = new HashtableOfObjectToInt();
 	this.nodesToCategories = new HashMap();
 }

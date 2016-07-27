@@ -1,3 +1,4 @@
+// GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2007 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -13,11 +14,13 @@ package org.eclipse.jdt.internal.core.search.matching;
 import org.eclipse.jdt.core.search.IJavaSearchConstants;
 import org.eclipse.jdt.internal.compiler.problem.ProblemReporter;
 
+public // GROOVY patched: made public
 class ImportMatchLocatorParser extends MatchLocatorParser {
 
 	boolean reportImportMatch;
 
-protected ImportMatchLocatorParser(ProblemReporter problemReporter, MatchLocator locator) {
+public // GROOVY patched: from protected to public
+ImportMatchLocatorParser(ProblemReporter problemReporter, MatchLocator locator) {
 	super(problemReporter, locator);
 	this.reportImportMatch = this.patternFineGrain == 0 || (this.patternFineGrain & IJavaSearchConstants.IMPORT_DECLARATION_TYPE_REFERENCE) != 0;
 }

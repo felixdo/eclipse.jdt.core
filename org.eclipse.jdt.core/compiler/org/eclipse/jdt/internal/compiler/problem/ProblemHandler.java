@@ -1,3 +1,4 @@
+// GROOVY PATCHED
 /*******************************************************************************
  * Copyright (c) 2000, 2016 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -23,6 +24,7 @@ import org.eclipse.jdt.internal.compiler.env.ICompilationUnit;
 import org.eclipse.jdt.internal.compiler.impl.CompilerOptions;
 import org.eclipse.jdt.internal.compiler.impl.ReferenceContext;
 import org.eclipse.jdt.internal.compiler.util.Util;
+import org.eclipse.jdt.internal.core.builder.SourceFile;
 
 /*
  * Compiler error handler, responsible to determine whether
@@ -206,6 +208,13 @@ public void handle(
 			}
 			break;
 		case ProblemSeverities.Warning :
+			// GROOVY start - still required?
+			if ((this.options.groovyFlags & 0x01) != 0) {
+				if ((unitResult.compilationUnit instanceof SourceFile) && ((SourceFile)unitResult.compilationUnit).isInLinkedSourceFolder()) {
+					return;
+				}
+			}
+			// GROOVY end
 			record(problem, unitResult, referenceContext, false);
 			break;
 	}
