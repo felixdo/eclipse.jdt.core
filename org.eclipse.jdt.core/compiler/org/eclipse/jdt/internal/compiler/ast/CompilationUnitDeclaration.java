@@ -159,6 +159,9 @@ public void cleanUp() {
 	}
 
 	this.suppressWarningAnnotations = null;
+
+	if (this.scope != null)
+		this.scope.cleanUpInferenceContexts();
 }
 
 private void cleanUp(TypeDeclaration type) {
