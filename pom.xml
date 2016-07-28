@@ -26,7 +26,6 @@
 
   <properties>
     <tycho.scmUrl>scm:git:git://git.eclipse.org/gitroot/jdt/eclipse.jdt.core.git</tycho.scmUrl>
-    <eclipse-p2-repo.url>http://download.eclipse.org/eclipse/updates/4.6</eclipse-p2-repo.url>
   </properties>
 
   <!-- 
@@ -37,6 +36,15 @@
   <profiles>
     <profile>
       <id>build-individual-bundles</id>
+      <properties>
+	<!-- the eclipse parent pom sets these to some inexisting repos, maybe they'll fix it sometime -->
+	<eclipse-p2-repo.url>
+	  http://download.eclipse.org/eclipse/updates/4.6
+	</eclipse-p2-repo.url>
+	<eclipserun-repo>
+	  http://download.eclipse.org/eclipse/updates/4.6
+	</eclipserun-repo>
+</properties>
       <repositories>
         <repository>
           <releases>
