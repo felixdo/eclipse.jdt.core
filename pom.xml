@@ -26,6 +26,7 @@
 
   <properties>
     <tycho.scmUrl>scm:git:git://git.eclipse.org/gitroot/jdt/eclipse.jdt.core.git</tycho.scmUrl>
+    <eclipse-p2-repo.url>http://download.eclipse.org/eclipse/updates/4.6</eclipse-p2-repo.url>
   </properties>
 
   <!-- 
